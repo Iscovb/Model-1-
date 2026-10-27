@@ -12,6 +12,7 @@ import { ModeCLog } from './components/ModeCLog';
 import { RiskCalculator } from './components/RiskCalculator';
 import { KnowledgeBase } from './components/KnowledgeBase';
 import { AIChatTab } from './components/AIChatTab';
+import { ChartReplayBacktester } from './components/ChartReplayBacktester';
 import { INITIAL_LOGS } from './constants/model1Data';
 import { TradeLogEntry } from './types';
 import { useMarketConditions } from './hooks/useMarketConditions';
@@ -25,10 +26,11 @@ import {
   MessageSquare,
   ShieldAlert,
   BellRing,
+  Scissors,
   X,
 } from 'lucide-react';
 
-type TabType = 'SCANNER' | 'CHART' | 'VIDEO' | 'LOG' | 'CALC' | 'KNOWLEDGE' | 'CHAT';
+type TabType = 'SCANNER' | 'REPLAY' | 'CHART' | 'VIDEO' | 'LOG' | 'CALC' | 'KNOWLEDGE' | 'CHAT';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('SCANNER');
@@ -111,6 +113,19 @@ export default function App() {
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             </div>
             <span>Live Scanner &amp; Bias</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('REPLAY')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0 ${
+              activeTab === 'REPLAY'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
+          >
+            <Scissors className="w-4 h-4" />
+            <span>Chart Replay (May–July)</span>
           </button>
 
           <button
@@ -248,6 +263,7 @@ export default function App() {
               onSendToLog={handleSendToLog}
             />
           )}
+          {activeTab === 'REPLAY' && <ChartReplayBacktester onSendToLog={handleSendToLog} />}
           {activeTab === 'CHART' && <ModeBChartReview onSendToLog={handleSendToLog} />}
           {activeTab === 'VIDEO' && <ModeAVideo />}
           {activeTab === 'LOG' && (
