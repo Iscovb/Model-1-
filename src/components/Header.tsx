@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { getNYTimeStatus, NYTimeStatus } from '../utils/nyTime';
-import { Clock, ShieldAlert, Sparkles, TrendingUp, Zap } from 'lucide-react';
+import { Clock, ShieldAlert, Sparkles, TrendingUp, Zap, Usb, Cable, Smartphone } from 'lucide-react';
+import { UsbConnectModal } from './UsbConnectModal';
 
 export const Header: React.FC = () => {
   const [nyStatus, setNyStatus] = useState<NYTimeStatus>(getNYTimeStatus());
+  const [showUsbModal, setShowUsbModal] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -18,23 +20,35 @@ export const Header: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           
           {/* Logo & Model Branding */}
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-300/40">
-              <span className="font-bold text-slate-950 text-xl tracking-tight font-mono">M#1</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
-                  Model#1 Gold Study Agent
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                    XAUUSD Kaliya
-                  </span>
-                </h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-300/40">
+                <span className="font-bold text-slate-950 text-xl tracking-tight font-mono">M#1</span>
               </div>
-              <p className="text-xs text-slate-400">
-                ICT Mentorship (TET Community 2026) • Af-Soomaali • Kaaliye Barasho Nadiif ah
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
+                    Model#1 Gold Study Agent
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      XAUUSD Kaliya
+                    </span>
+                  </h1>
+                </div>
+                <p className="text-xs text-slate-400">
+                  ICT Mentorship (TET Community 2026) • Af-Soomaali • Kaaliye Barasho Nadiif ah
+                </p>
+              </div>
             </div>
+
+            {/* Mobile quick APK button for small screens */}
+            <button
+              onClick={() => setShowUsbModal(true)}
+              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold shadow-md shadow-amber-500/20 hover:bg-amber-400 transition shrink-0 cursor-pointer"
+              title="Degso faylka Android APK (.apk)"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>Degso APK</span>
+            </button>
           </div>
 
           {/* Live Market Clocks & Purge Tracker */}
@@ -129,10 +143,30 @@ export const Header: React.FC = () => {
               <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
               <span>Risk 1% • 3R Target • No Signals</span>
             </div>
+
+            {/* Prominent Top APK Download Option */}
+            <button
+              onClick={() => setShowUsbModal(true)}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 hover:brightness-110 active:scale-95 transition cursor-pointer border border-amber-300/60"
+              title="Degso faylka Android APK (.apk)"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>Degso APK (.apk)</span>
+              <span className="text-[10px] bg-slate-950/20 text-slate-950 px-1.5 py-0.5 rounded-md font-mono hidden sm:inline">
+                Android
+              </span>
+            </button>
           </div>
 
         </div>
       </div>
+
+      {/* USB Connect & Mobile Deploy Modal */}
+      <UsbConnectModal
+        isOpen={showUsbModal}
+        onClose={() => setShowUsbModal(false)}
+      />
     </header>
   );
 };
+

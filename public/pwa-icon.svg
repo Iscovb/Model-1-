@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d"/>
+      <stop offset="50%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#050814"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="35%" stop-color="#f59e0b"/>
+      <stop offset="70%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="goldGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  
+  <!-- Outer glowing border -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="url(#goldGrad)" stroke-width="6" opacity="0.4"/>
+  <rect x="28" y="28" width="456" height="456" rx="84" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.2"/>
+
+  <!-- Subtle grid lines resembling TradingView charts -->
+  <line x1="80" y1="140" x2="432" y2="140" stroke="#1e293b" stroke-width="2" stroke-dasharray="6 6"/>
+  <line x1="80" y1="230" x2="432" y2="230" stroke="#1e293b" stroke-width="2" stroke-dasharray="6 6"/>
+  <line x1="80" y1="320" x2="432" y2="320" stroke="#1e293b" stroke-width="2" stroke-dasharray="6 6"/>
+  <line x1="80" y1="410" x2="432" y2="410" stroke="#1e293b" stroke-width="2" stroke-dasharray="6 6"/>
+
+  <!-- Candlesticks / ICT FVG Pattern in Background -->
+  <!-- Candle 1 -->
+  <line x1="140" y1="210" x2="140" y2="340" stroke="#334155" stroke-width="3"/>
+  <rect x="130" y="240" width="20" height="70" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+
+  <!-- Candle 2 (Displacement Purge) -->
+  <line x1="210" y1="130" x2="210" y2="420" stroke="#f59e0b" stroke-width="3" opacity="0.6"/>
+  <rect x="198" y="160" width="24" height="210" rx="4" fill="url(#goldGrad)" opacity="0.85"/>
+
+  <!-- Candle 3 -->
+  <line x1="280" y1="220" x2="280" y2="380" stroke="#334155" stroke-width="3"/>
+  <rect x="270" y="260" width="20" height="80" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+
+  <!-- Central Badge with M#1 -->
+  <rect x="86" y="180" width="340" height="152" rx="36" fill="#020617" stroke="url(#goldGrad)" stroke-width="4" filter="url(#glow)"/>
+  <rect x="90" y="184" width="332" height="144" rx="32" fill="url(#goldGlow)"/>
+
+  <!-- Text: M#1 -->
+  <text x="256" y="278" font-family="'JetBrains Mono', monospace, sans-serif" font-size="82" font-weight="900" fill="url(#goldGrad)" text-anchor="middle" letter-spacing="-1">
+    M#1
+  </text>
+  <text x="256" y="312" font-family="'Plus Jakarta Sans', sans-serif" font-size="18" font-weight="700" fill="#fef08a" text-anchor="middle" letter-spacing="4">
+    XAUUSD • ICT
+  </text>
+
+  <!-- Gold Star / Accent -->
+  <circle cx="256" cy="120" r="14" fill="#fbbf24"/>
+  <circle cx="256" cy="120" r="28" fill="#fbbf24" opacity="0.25"/>
+</svg>

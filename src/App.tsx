@@ -113,6 +113,7 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
         {/* Navigation Tabs Bar */}
         <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800/80 overflow-x-auto scrollbar-none shadow-lg">
           <button
@@ -351,3 +352,4 @@ export default function App() {
     </div>
   );
 }
+

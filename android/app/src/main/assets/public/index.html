@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      (function() {
+        // Intercept Vite dev server WebSocket to prevent "WebSocket closed without opened" errors
+        try {
+          var RealWebSocket = window.WebSocket;
+          if (RealWebSocket) {
+            window.WebSocket = function(url, protocols) {
+              var urlStr = String(url || '');
+              if (
+                urlStr.indexOf('vite') !== -1 ||
+                urlStr.indexOf('ais-dev') !== -1 ||
+                urlStr.indexOf('ais-pre') !== -1 ||
+                urlStr.indexOf('localhost') !== -1 ||
+                urlStr.indexOf('127.0.0.1') !== -1 ||
+                urlStr.indexOf(':3000') !== -1
+              ) {
+                var dummyTarget = document.createDocumentFragment();
+                var noop = function() {};
+                var mock = {
+                  url: urlStr,
+                  readyState: 1, // WebSocket.OPEN
+                  CONNECTING: 0,
+                  OPEN: 1,
+                  CLOSING: 2,
+                  CLOSED: 3,
+                  binaryType: 'blob',
+                  bufferedAmount: 0,
+                  extensions: '',
+                  protocol: '',
+                  onopen: null,
+                  onclose: null,
+                  onerror: null,
+                  onmessage: null,
+                  send: noop,
+                  close: noop,
+                  addEventListener: function(type, listener, options) {
+                    dummyTarget.addEventListener(type, listener, options);
+                  },
+                  removeEventListener: function(type, listener, options) {
+                    dummyTarget.removeEventListener(type, listener, options);
+                  },
+                  dispatchEvent: function(event) {
+                    return dummyTarget.dispatchEvent(event);
+                  }
+                };
+                setTimeout(function() {
+                  try {
+                    if (typeof mock.onopen === 'function') {
+                      mock.onopen(new Event('open'));
+                    }
+                    mock.dispatchEvent(new Event('open'));
+                  } catch (e) {}
+                }, 10);
+                return mock;
+              }
+              return new RealWebSocket(url, protocols);
+            };
+            window.WebSocket.prototype = RealWebSocket.prototype;
+            window.WebSocket.CONNECTING = 0;
+            window.WebSocket.OPEN = 1;
+            window.WebSocket.CLOSING = 2;
+            window.WebSocket.CLOSED = 3;
+          }
+        } catch (e) {}
+
+        // Thoroughly suppress Vite HMR WebSocket closed errors in AI Studio iframe environment
+        function isIgnorable(args) {
+          try {
+            for (var i = 0; i < args.length; i++) {
+              var a = args[i];
+              var str = typeof a === 'string' ? a : (a && (a.message || a.stack || a.toString?.())) || '';
+              if (
+                str.indexOf('WebSocket') !== -1 ||
+                str.indexOf('[vite]') !== -1 ||
+                str.indexOf('@vite/client') !== -1 ||
+                str.indexOf('vite:ws') !== -1
+              ) {
+                return true;
+              }
+            }
+          } catch (e) {}
+          return false;
+        }
+
+        var origError = console.error;
+        console.error = function() {
+          if (isIgnorable(arguments)) return;
+          return origError.apply(console, arguments);
+        };
+
+        var origWarn = console.warn;
+        console.warn = function() {
+          if (isIgnorable(arguments)) return;
+          return origWarn.apply(console, arguments);
+        };
+
+        window.addEventListener('error', function(e) {
+          var msg = (e && (e.message || (e.error && e.error.message))) || '';
+          var filename = (e && e.filename) || '';
+          if (
+            msg.indexOf('WebSocket') !== -1 ||
+            msg.indexOf('[vite]') !== -1 ||
+            msg.indexOf('@vite/client') !== -1 ||
+            filename.indexOf('@vite/client') !== -1
+          ) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          var reason = e && e.reason;
+          var msg = String(reason && (reason.message || reason.stack || reason) || '');
+          if (
+            msg.indexOf('WebSocket') !== -1 ||
+            msg.indexOf('[vite]') !== -1 ||
+            msg.indexOf('@vite/client') !== -1
+          ) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Model#1 Gold Study Agent | XAUUSD ICT Mentorship</title>
+    <meta name="description" content="Kaaliyaha barashada Model#1 (XAUUSD kaliya) ee ICT TET mentorship 2026. Video analysis, 11-point chart review, iyo trading journal." />
+    
+    <!-- PWA & Mobile Web App Meta -->
+    <meta name="theme-color" content="#020617" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Model#1 Gold" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="Model#1 Gold" />
+    
+    <link rel="icon" type="image/svg+xml" href="/pwa-icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <meta property="og:title" content="Model#1 Gold Study Agent | XAUUSD ICT Mentorship" />
+    <meta property="og:description" content="Kaaliyaha barashada Model#1 (XAUUSD kaliya) ee ICT TET mentorship 2026. Video analysis, 11-point chart review, iyo trading journal." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/assets/index-B2CNp_ST.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-OKSOFv5_.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+

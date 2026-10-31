@@ -23,6 +23,15 @@ import {
   BarChart2,
   AlertCircle,
   HelpCircle,
+  Award,
+  DollarSign,
+  Activity,
+  Percent,
+  Briefcase,
+  ShieldCheck,
+  Scale,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 
 interface Props {
@@ -85,6 +94,32 @@ export const ForwardTestingTab: React.FC<Props> = ({
     closedTrades.length > 0 ? Math.round((winTrades.length / closedTrades.length) * 100) : 0;
   const netR = forwardTrades.reduce((acc, t) => acc + (t.status === 'OPEN' ? 0 : t.rMultiple), 0);
   const totalPips = forwardTrades.reduce((acc, t) => acc + (t.status === 'OPEN' ? 0 : t.pips), 0);
+
+  // Account Capital state for 1% Risk Rule Engine
+  const [accountSize, setAccountSize] = useState<number>(() => {
+    const saved = localStorage.getItem('model1_agent_summary_account_size');
+    return saved ? parseFloat(saved) : 10000;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('model1_agent_summary_account_size', String(accountSize));
+  }, [accountSize]);
+
+  // 1% Risk Rule Calculations
+  const riskPerTradeDollars = accountSize * 0.01;
+  const winDollarPerTrade = riskPerTradeDollars * 3; // Fixed 3R Target (+3%)
+  const lossDollarPerTrade = riskPerTradeDollars * 1; // Fixed 1R Stop Loss (-1%)
+  const cumulativeProfitDollars =
+    winTrades.length * winDollarPerTrade - lossTrades.length * lossDollarPerTrade;
+  const cumulativeGainPct = netR * 1.0; // 1R = 1%
+  const currentAccountBalance = accountSize + cumulativeProfitDollars;
+  const lossRate =
+    closedTrades.length > 0 ? Math.round((lossTrades.length / closedTrades.length) * 100) : 0;
+  const profitFactor =
+    lossTrades.length > 0
+      ? ((winTrades.length * 3) / (lossTrades.length * 1)).toFixed(2)
+      : (winTrades.length * 3).toFixed(2);
+  const avgRPerTrade = closedTrades.length > 0 ? netR / closedTrades.length : 0;
 
   // Filtered list
   const filteredTrades = forwardTrades.filter((t) => {
@@ -322,49 +357,182 @@ export const ForwardTestingTab: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 4 Forward Testing Performance Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
-          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-sans">
-              Forward Tests Guud
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl font-bold text-slate-100">{totalTrades}</span>
-              <span className="text-xs text-slate-500 font-sans">
-                ({closedTrades.length} xiran / {openTrades.length} furan)
+        {/* 2. AGENT SUMMARY SECTION (1% RISK RULE) */}
+        <div className="pt-4 border-t border-slate-800/80 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                <Briefcase className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                    <span>Agent Summary</span>
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    Live Model#1 Tracker
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Agent Active
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Xogta tooska ah ee live agent-ka, guulaha/khasaaraha, iyo faa'iidada is-biirsatay ee ku salaysan xeerka 1% halis ah.
+                </p>
+              </div>
+            </div>
+
+            {/* Account Capital Selector for 1% Risk Calculations */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs self-start sm:self-auto">
+              <span className="text-[10px] text-slate-400 font-sans px-1.5 flex items-center gap-1">
+                <DollarSign className="w-3 h-3 text-amber-400" />
+                <span>Account:</span>
+              </span>
+              {[10000, 25000, 50000, 100000].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setAccountSize(amt)}
+                  className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-semibold transition cursor-pointer ${
+                    accountSize === amt
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  ${amt >= 1000 ? `${amt / 1000}k` : amt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4 Agent Summary Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono">
+            {/* Card 1: Live Agent Trade Count */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-sky-400" />
+                  Agent Trade Count
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20 text-[9px] font-mono">
+                  Live
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-slate-100">{totalTrades}</span>
+                <span className="text-xs text-slate-500 font-sans">trades la fuliyay</span>
+              </div>
+              <div className="flex items-center justify-between pt-1 text-[11px] border-t border-slate-800/80">
+                <span className="text-slate-400 font-sans">Xiran: <strong className="text-slate-200 font-mono">{closedTrades.length}</strong></span>
+                <span className="text-amber-400 font-sans">Furan: <strong className="font-mono">{openTrades.length}</strong></span>
+              </div>
+            </div>
+
+            {/* Card 2: Total Wins & Losses */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 font-mono flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 text-emerald-400" />
+                  Wins / Losses
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                  {winRate}% WR
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-extrabold text-emerald-400">{winTrades.length}</span>
+                <span className="text-xs text-emerald-400/80 font-sans font-semibold">Wins</span>
+                <span className="text-slate-600 mx-1">/</span>
+                <span className="text-xl font-bold text-rose-400">{lossTrades.length}</span>
+                <span className="text-xs text-rose-400/80 font-sans font-semibold">Losses</span>
+              </div>
+              {/* Progress bar */}
+              <div className="pt-1 space-y-0.5">
+                <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden flex">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${closedTrades.length > 0 ? (winTrades.length / closedTrades.length) * 100 : 0}%` }}
+                  />
+                  <div
+                    className="h-full bg-rose-500 transition-all duration-500"
+                    style={{ width: `${closedTrades.length > 0 ? (lossTrades.length / closedTrades.length) * 100 : 0}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[9px] text-slate-500">
+                  <span className="text-emerald-400 font-mono">{winTrades.length} guul</span>
+                  <span className="text-rose-400 font-mono">{lossTrades.length} khasaare</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Cumulative Profit / Loss (1% Risk Rule) */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 font-mono flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                  Cumulative PnL (1% Risk)
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold">
+                  {cumulativeGainPct >= 0 ? '+' : ''}{cumulativeGainPct.toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-2xl font-extrabold ${cumulativeProfitDollars >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {cumulativeProfitDollars >= 0 ? '+' : ''}${cumulativeProfitDollars.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className="text-xs font-bold text-amber-400">
+                  (+{netR.toFixed(1)}R)
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1 text-[11px] border-t border-slate-800/80">
+                <span className="text-slate-400 font-sans">Balance:</span>
+                <span className="text-sky-300 font-bold font-mono">
+                  ${currentAccountBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+
+            {/* Card 4: Expectancy & Metrics */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 font-mono flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-amber-400" />
+                  Expectancy &amp; Pips
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-bold">
+                  PF: {profitFactor}x
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-sky-400">+{totalPips}</span>
+                <span className="text-xs text-slate-400 font-sans">pips dahab ah</span>
+              </div>
+              <div className="flex items-center justify-between pt-1 text-[11px] border-t border-slate-800/80">
+                <span className="text-slate-400 font-sans">Avg Return:</span>
+                <span className="text-emerald-400 font-bold font-mono">+{avgRPerTrade.toFixed(2)}R/trade</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 1% Risk Rule Engine Policy Strip */}
+          <div className="p-3 rounded-xl bg-slate-950/90 border border-slate-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+            <div className="flex items-center gap-2 text-slate-300">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong>Sharciga 1% Halista ah:</strong> Trade kasta waxaa lagu xisaabiyaa <strong>${riskPerTradeDollars.toFixed(0)} (1.00%)</strong>. Guul kasta (Fixed 3R) waxay dhalisaa <strong>+${winDollarPerTrade.toFixed(0)} (+3.00%)</strong>, khasaare kastana waa <strong>-${lossDollarPerTrade.toFixed(0)} (-1.00%)</strong>.
               </span>
             </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
-            <span className="text-[10px] text-emerald-400 uppercase tracking-wider block font-sans">
-              Forward Test Win Rate
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl font-bold text-emerald-400">{winRate}%</span>
-              <span className="text-xs text-slate-400 font-sans">
-                ({winTrades.length} Wins / {lossTrades.length} Loss)
+            <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px]">
+              <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                Win: +3R (+$300)
               </span>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
-            <span className="text-[10px] text-amber-400 uppercase tracking-wider block font-sans">
-              Net Forward Profit
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl font-bold text-amber-400">+{netR.toFixed(1)}R</span>
-              <span className="text-xs text-slate-400 font-sans">(1% halis ah)</span>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
-            <span className="text-[10px] text-sky-400 uppercase tracking-wider block font-sans">
-              Wadarta Pips-ka
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl font-bold text-sky-400">+{totalPips}</span>
-              <span className="text-xs text-slate-400 font-sans">pips Dahab ah</span>
+              <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/30">
+                Loss: -1R (-$100)
+              </span>
+              <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                Fixed 1:3 RR
+              </span>
             </div>
           </div>
         </div>

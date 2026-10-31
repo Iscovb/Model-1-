@@ -7,6 +7,11 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
+// Ensure HMR is disabled in AI Studio cloud preview environment
+if (process.env.DISABLE_HMR === undefined) {
+  process.env.DISABLE_HMR = 'true';
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -14,11 +19,13 @@ const app = express();
 
 const portArgIndex = process.argv.indexOf('--port');
 const cliPort = portArgIndex !== -1 ? parseInt(process.argv[portArgIndex + 1], 10) : undefined;
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : (cliPort || 3000);
-
 const hostArgIndex = process.argv.indexOf('--host');
 const cliHost = hostArgIndex !== -1 ? process.argv[hostArgIndex + 1] : undefined;
-const HOST = process.env.HOST || cliHost || '0.0.0.0';
+
+// In AI Studio Build, the dev server runner passes --port 3000 --host 0.0.0.0.
+// cliPort must take precedence over Cloud Run's default environment PORT (8080).
+const PORT = cliPort || (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
+const HOST = cliHost || process.env.HOST || '0.0.0.0';
 
 app.use(express.json({ limit: '25mb' }));
 
@@ -488,7 +495,7 @@ async function startServer() {
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
-        hmr: process.env.DISABLE_HMR === 'true' ? false : undefined,
+        hmr: false,
       },
       appType: 'spa',
     });

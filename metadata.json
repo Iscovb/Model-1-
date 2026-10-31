@@ -1,6 +1,6 @@
 {
   "name": "Model#1 Gold Study Agent (XAUUSD ICT)",
   "description": "Kaaliyaha barashada Model#1 (XAUUSD) ee ICT TET mentorship. Hababka: Video Analysis, 11-point Chart Review, iyo Trading Journal CSV.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["usb"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

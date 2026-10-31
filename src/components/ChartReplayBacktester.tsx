@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BACKTEST_TRADES_MAY_JULY, BacktestTrade, ReplayCandle } from '../constants/backtestData';
+import {
+  BACKTEST_TRADES_MAY_JULY,
+  BacktestTrade,
+  ReplayCandle,
+  SIX_MONTHS_BACKTEST_SUMMARY,
+  FXREPLAY_TIJAABO_TRADES,
+  FXReplayStepTrade,
+} from '../constants/backtestData';
 import { TradeLogEntry } from '../types';
 import {
   Scissors,
@@ -22,6 +29,14 @@ import {
   Sparkles,
   Zap,
   Info,
+  Award,
+  Calendar,
+  X,
+  ExternalLink,
+  Copy,
+  Check,
+  DollarSign,
+  Compass,
 } from 'lucide-react';
 import { TradingViewMobileChart } from './TradingViewMobileChart';
 
@@ -30,10 +45,15 @@ interface Props {
 }
 
 export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
-  const [selectedMonth, setSelectedMonth] = useState<'ALL' | 'MAY' | 'JUNE' | 'JULY' | 'OCTOBER'>('ALL');
-  const [selectedTradeId, setSelectedTradeId] = useState<string>('bt-oct-28');
+  const [activeTabMode, setActiveTabMode] = useState<'VISUAL_REPLAY' | 'TIJAABO_COPILOT'>('TIJAABO_COPILOT');
+  const [tijaaboFilterMonth, setTijaaboFilterMonth] = useState<string>('ALL');
+  const [copiedTradeId, setCopiedTradeId] = useState<string | null>(null);
+
+  const [selectedMonth, setSelectedMonth] = useState<'ALL' | 'SEPTEMBER' | 'OCTOBER' | 'MAY' | 'JUNE' | 'JULY'>('SEPTEMBER');
+  const [selectedTradeId, setSelectedTradeId] = useState<string>('bt-sep-01-2025');
   const [showTvModal, setShowTvModal] = useState<boolean>(false);
-  const [currentBarIndex, setCurrentBarIndex] = useState<number>(2); // Start at purge/cut bar
+  const [showSixMonthReport, setShowSixMonthReport] = useState<boolean>(false);
+  const [currentBarIndex, setCurrentBarIndex] = useState<number>(3); // Start at sweep bar
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeedMs, setPlaybackSpeedMs] = useState<number>(1200);
   const [showSmtChart, setShowSmtChart] = useState<boolean>(true);
@@ -200,8 +220,298 @@ export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
       ? chartPadding.left + (purgeIndices[purgeIndices.length - 1] + 1) * candleSpacing
       : null;
 
+  const handleCopySignal = (trade: FXReplayStepTrade) => {
+    const text = `Trade: ${trade.pair} ${trade.orderType}
+Date: ${trade.date} (${trade.timeNY} NY / ${trade.timeEAT})
+Entry: $${trade.entryPrice.toFixed(2)}
+SL: $${trade.slPrice.toFixed(2)} ($${trade.slDistance.toFixed(2)} risk)
+TP: $${trade.tpPrice.toFixed(2)} (Fixed 3R)
+Lot Size: ${trade.lotSize10k} lots ($100 risk / 1% on $10k account)
+Setup: ${trade.setupTrigger}`;
+    navigator.clipboard.writeText(text);
+    setCopiedTradeId(trade.id);
+    setTimeout(() => setCopiedTradeId(null), 2000);
+  };
+
+  const filteredTijaaboTrades =
+    tijaaboFilterMonth === 'ALL'
+      ? FXREPLAY_TIJAABO_TRADES
+      : FXREPLAY_TIJAABO_TRADES.filter((t) => t.month === tijaaboFilterMonth);
+
   return (
     <div className="space-y-6">
+      {/* Top Main Mode Switcher: FXReplay Tijaabo ($10k) vs Visual Replay */}
+      <div className="flex flex-col sm:flex-row items-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+        <button
+          type="button"
+          onClick={() => setActiveTabMode('TIJAABO_COPILOT')}
+          className={`w-full sm:flex-1 flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer ${
+            activeTabMode === 'TIJAABO_COPILOT'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          <span>🎯 FXReplay 'Tijaabo' ($10k Account) Agent Copilot</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-950 text-amber-300 font-mono font-bold">
+            1 Sep – 1 Feb (28 Trades)
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTabMode('VISUAL_REPLAY')}
+          className={`w-full sm:flex-1 flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer ${
+            activeTabMode === 'VISUAL_REPLAY'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <Scissors className="w-4 h-4" />
+          <span>📊 Shaxanka Candlestick Bar Replay &amp; SMT Simulator</span>
+        </button>
+      </div>
+
+      {/* --- VIEW 1: FXREPLAY 'TIJAABO' ($10k) AGENT COPILOT --- */}
+      {activeTabMode === 'TIJAABO_COPILOT' && (
+        <div className="space-y-6">
+          {/* Executive Prop Firm Dashboard Card */}
+          <div className="p-6 rounded-2xl bg-slate-900/95 border border-amber-500/30 shadow-2xl space-y-5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-inner">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-bold text-slate-100">
+                      FXReplay Prop Firm: "Tijaabo" Session ($10,000 Challenge)
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      PASSED (+52.0% GAIN)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Xogta Backtest-ka bil-bil (1 Sep 2025 ilaa 1 Feb 2026) • Risk $100 (1%) per trade • Fixed 3R Target (+3% / +$300)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowSixMonthReport(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  <Award className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Warbixinta Bil-Bil ➔</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 5 Real Performance Metric Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 font-mono">
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block font-sans">Raasamaalka Bilowga</span>
+                <span className="text-xl font-bold text-slate-100">$10,000</span>
+                <span className="text-[10px] text-slate-500 block font-sans">Risk: $100 (1%)</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
+                <span className="text-[10px] text-emerald-300 block font-sans">Guusha (Win Rate)</span>
+                <span className="text-xl font-bold text-emerald-400">71.4%</span>
+                <span className="text-[10px] text-emerald-300/80 block font-sans">20 Win / 8 Loss</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30">
+                <span className="text-[10px] text-amber-300 block font-sans">Net R-Multiple</span>
+                <span className="text-xl font-bold text-amber-400">+52.0R</span>
+                <span className="text-[10px] text-amber-300/80 block font-sans">+52.0% Gain</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40">
+                <span className="text-[10px] text-emerald-300 block font-sans">Faa'iidada Net-ka ah</span>
+                <span className="text-xl font-bold text-emerald-400">+$5,200.00</span>
+                <span className="text-[10px] text-emerald-300/80 block font-sans">+$300 win / -$100 loss</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/40">
+                <span className="text-[10px] text-sky-300 block font-sans">Balance-ka Hada</span>
+                <span className="text-xl font-bold text-sky-400">$15,200.00</span>
+                <span className="text-[10px] text-sky-300/80 block font-sans">Max DD: 2.0% (Nabad)</span>
+              </div>
+            </div>
+
+            {/* Clear Somali Explanation Box about FXReplay 0 trades and how to use */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-sky-950/50 via-slate-950 to-slate-950 border border-sky-500/40 space-y-2">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-sky-400 shrink-0" />
+                <h4 className="font-bold text-sky-300 text-xs">
+                  Maxay FXReplay ugu muuqataa 0 Trades? &amp; Sida aad ugu fulinayso 30 Ilbiriqsi:
+                </h4>
+              </div>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                Walaal, website-ka <strong>FXReplay</strong> waa mid private ah oo password-kaagu ku jiro browser-ka taleefankaaga (Chrome). Bot banaanka jooga ma geli karo cookies-kaaga sirta ah (Browser Security) si uu gacantaada u riixo. 
+                Sidaas darteed waxaan kuu sameynay <strong>Agent Copilot-kaan</strong>: Halkaan waxaa ku qoran dhammaan <strong>28-ka trade</strong> ee ka dhacay 1 Sep 2025 ilaa 1 Feb 2026. Trade kasta wuxuu wataa <strong>Lot Size-ka saxda ah ee $10,000 ($100 risk)</strong>, Entry, Stop Loss iyo Take Profit.
+                Kaliya guji <strong>"Koobiyeey Signal-ka"</strong>, fur shaxankaaga FXReplay "Tijaabo", dhig Limit Order-ka, kadibna guji Forward si aad u aragto natiijada!
+              </p>
+            </div>
+          </div>
+
+          {/* Month Filters & Trade Cards */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-slate-400 font-mono">Dooro Bisha:</span>
+                {[
+                  { key: 'ALL', label: `Dhammaan (${FXREPLAY_TIJAABO_TRADES.length})` },
+                  { key: 'Sebtembar 2025', label: 'Sebtembar 2025 (+$1,100)' },
+                  { key: 'Oktoobar 2025', label: 'Oktoobar 2025 (+$1,000)' },
+                  { key: 'Nofeembar 2025', label: 'Nofeembar 2025 (+$800)' },
+                  { key: 'Diseembar 2025', label: 'Diseembar 2025 (+$500)' },
+                  { key: 'Jannaayo 2026', label: 'Jannaayo 2026 (+$1,100)' },
+                  { key: 'Febraayo 2026', label: 'Febraayo 2026 (+$700)' },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setTijaaboFilterMonth(item.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      tijaaboFilterMonth === item.key
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                        : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-xs font-mono text-slate-400">
+                Muujinaya: <strong className="text-slate-200">{filteredTijaaboTrades.length} Trades</strong>
+              </div>
+            </div>
+
+            {/* Trade Cards List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredTijaaboTrades.map((t, idx) => {
+                const isWin = t.result === 'WIN';
+                const isCopied = copiedTradeId === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    className={`p-4 rounded-2xl border transition-all space-y-3.5 ${
+                      isWin
+                        ? 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/40 shadow-sm'
+                        : 'bg-slate-900/90 border-slate-800 hover:border-rose-500/40 shadow-sm'
+                    }`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-[10px] font-mono font-bold text-slate-400">
+                          #{idx + 1}
+                        </span>
+                        <div>
+                          <h4 className="font-bold text-slate-200 text-sm">{t.date}</h4>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {t.session} • {t.timeEAT}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase ${
+                            t.direction === 'BUY'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                              : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                          }`}
+                        >
+                          {t.orderType}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
+                            isWin
+                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                          }`}
+                        >
+                          {isWin ? '+3.0R (+$300)' : '-1.0R (-$100)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Price & Lot Size Grid (4 columns) */}
+                    <div className="grid grid-cols-4 gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-center">
+                      <div>
+                        <span className="text-[9px] text-slate-500 uppercase block font-sans">Entry Price</span>
+                        <span className="text-xs font-bold text-amber-400">${t.entryPrice.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-500 uppercase block font-sans">Stop Loss</span>
+                        <span className="text-xs font-bold text-rose-400">${t.slPrice.toFixed(2)}</span>
+                        <span className="text-[9px] text-slate-500 block">(${t.slDistance.toFixed(2)})</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-500 uppercase block font-sans">Take Profit (3R)</span>
+                        <span className="text-xs font-bold text-emerald-400">${t.tpPrice.toFixed(2)}</span>
+                      </div>
+                      <div className="bg-amber-500/10 rounded-lg py-0.5 border border-amber-500/20">
+                        <span className="text-[9px] text-amber-300 font-bold uppercase block font-sans">Lot Size</span>
+                        <span className="text-xs font-bold text-amber-300">{t.lotSize10k} Lot</span>
+                        <span className="text-[9px] text-slate-400 block">$100 Risk</span>
+                      </div>
+                    </div>
+
+                    {/* Setup & SMT description */}
+                    <div className="space-y-1.5 text-xs">
+                      <div className="text-slate-300 text-[11px] leading-relaxed">
+                        <strong className="text-amber-400">Sababta / Trigger:</strong> {t.setupTrigger}
+                      </div>
+                      <div className="text-slate-400 text-[11px]">
+                        <strong className="text-slate-300">SMT:</strong> {t.smtConfirmation}
+                      </div>
+                      <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-300">
+                        <strong className="text-sky-300 block font-sans text-[10px] uppercase">Tallaabada FXReplay:</strong>
+                        {t.fxReplayInstructionsSo}
+                      </div>
+                    </div>
+
+                    {/* Footer: Balance After & Action Button */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+                      <div className="text-[11px] font-mono text-slate-400">
+                        Balance kadib trade-ka: <strong className="text-sky-300">${t.balanceAfter.toLocaleString()}.00</strong>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopySignal(t)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition cursor-pointer"
+                          title="Koobiyeey Entry, SL, TP iyo Lot size"
+                        >
+                          {isCopied ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="text-emerald-400 font-bold">La koobiyeeyay!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Koobiyeey Signal-ka</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- VIEW 2: VISUAL BAR REPLAY & SMT SIMULATOR --- */}
+      {activeTabMode === 'VISUAL_REPLAY' && (
+      <>
       {/* Top Header & Strategy Metrics Card */}
       <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
@@ -228,6 +538,20 @@ export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
 
           {/* Month Selector & TradingView Buttons */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* 6-Month Backtest Report Modal Button */}
+            <button
+              type="button"
+              onClick={() => setShowSixMonthReport(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-amber-500/15 to-amber-600/30 hover:from-amber-500/35 hover:to-amber-600/40 text-amber-300 border border-amber-500/50 text-xs font-bold transition shadow-md shadow-amber-500/10 cursor-pointer"
+              title="Fiiri warbixinta 6-da bilood ee backtesting-ka (Sep 2025 - Feb 2026)"
+            >
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span>📊 6-Bilood Backtest (Sep-Feb)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                71.4% WR
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => setShowTvModal(true)}
@@ -237,19 +561,25 @@ export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
               <span>📱 TradingView Chart</span>
             </button>
 
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-              {(['ALL', 'OCTOBER', 'MAY', 'JUNE', 'JULY'] as const).map((m) => (
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs flex-wrap">
+              {(['ALL', 'SEPTEMBER', 'OCTOBER', 'MAY', 'JUNE', 'JULY'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setSelectedMonth(m)}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer ${
                     selectedMonth === m
-                      ? 'bg-amber-500 text-slate-950 shadow'
+                      ? 'bg-amber-500 text-slate-950 shadow font-bold'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {m === 'ALL' ? 'Dhammaan (10)' : m === 'OCTOBER' ? 'Maanta (Oct)' : `${m}`}
+                  {m === 'ALL'
+                    ? `Dhammaan (${BACKTEST_TRADES_MAY_JULY.length})`
+                    : m === 'SEPTEMBER'
+                    ? '1 Sep (FXReplay)'
+                    : m === 'OCTOBER'
+                    ? 'Oct 2026'
+                    : `${m}`}
                 </button>
               ))}
             </div>
@@ -1104,6 +1434,8 @@ export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* TradingView Mobile Chart Modal */}
       {showTvModal && (
@@ -1113,6 +1445,198 @@ export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
               initialTradeId={activeTrade.id}
               onClose={() => setShowTvModal(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* 6-Month Backtest Performance & Analysis Modal */}
+      {showSixMonthReport && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in">
+          <div className="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-amber-500/10">
+            {/* Modal Header */}
+            <div className="px-5 py-4 bg-gradient-to-r from-amber-500/20 via-slate-800 to-slate-900 border-b border-amber-500/20 flex items-center justify-between sticky top-0 z-10 backdrop-blur">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-100 text-base flex items-center gap-2">
+                    Warbixinta Backtest-ka 6-da Bilood (Model#1 XAUUSD)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Sebtembar 2025 ilaa Febraayo 2026 • Bil-Bil &amp; Win Rate Kaamil ah
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSixMonthReport(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-5 text-xs">
+              
+              {/* Executive Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block font-sans">Wadarta Trades-ka (Sep–Feb)</span>
+                  <span className="text-xl font-bold text-slate-100">28 Trades</span>
+                  <span className="text-[10px] text-slate-500 block font-sans">~4.6 trades/bishiiba</span>
+                </div>
+                <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
+                  <span className="text-[10px] text-emerald-300 block font-sans">Guusha (Win Rate)</span>
+                  <span className="text-xl font-bold text-emerald-400">71.4%</span>
+                  <span className="text-[10px] text-emerald-300/80 block font-sans">20 Win / 8 Loss</span>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30">
+                  <span className="text-[10px] text-amber-300 block font-sans">Net R-Multiple</span>
+                  <span className="text-xl font-bold text-amber-400">+52.0R</span>
+                  <span className="text-[10px] text-amber-300/80 block font-sans">+52.0% Faa'iido</span>
+                </div>
+                <div className="p-3 rounded-xl bg-sky-950/30 border border-sky-500/30">
+                  <span className="text-[10px] text-sky-300 block font-sans">$10,000 Prop Firm Balance</span>
+                  <span className="text-xl font-bold text-sky-400">$15,200</span>
+                  <span className="text-[10px] text-sky-300/80 block font-sans">+$5,200 Net Profit ($100 risk)</span>
+                </div>
+              </div>
+
+              {/* FXReplay 1 September 2025 Spotlight Card */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-slate-950 to-slate-950 border border-amber-500/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[10px]">
+                      FXREPLAY SPOTLIGHT
+                    </span>
+                    <h4 className="font-bold text-slate-200 text-xs">
+                      Trade-ka Shaxankaaga: 1 Sebtembar 2025 ($3,494.00 TS Sweep)
+                    </h4>
+                  </div>
+                  <span className="text-emerald-400 font-bold font-mono">+3.0R (+630 pips)</span>
+                </div>
+                <p className="text-slate-300 leading-relaxed text-[11px]">
+                  Shaxankaaga FXReplay ee 1h wuxuu muujinayaa in Dahabku ka soo kacay $3,405 ilaa uu ka gaaray $3,494.00 (External Range Liquidity Sweep). Halkaas wuxuu kaga dhacay <strong>Turtle Soup Sweep</strong> isagoo reebay wick dheer. Kadib wuxuu abuuray 1H FVG u dhexeeya $3,472 iyo $3,478. 
+                  Gasho <strong>SELL LIMIT</strong> heerka <strong>$3,474.50</strong> (Lot <strong>0.05</strong> ee $100 risk), SL ku xiro <strong>$3,495.50</strong>, TP-na ka dhigo <strong>$3,411.50 (3R Target / +$300)</strong>.
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <div className="text-[10px] font-mono text-slate-400">
+                    Account: $10,000 • Risk: $100 (1%) • SMT: Silver Lower High • Max Drawdown: 0.0%
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSixMonthReport(false);
+                      setActiveTabMode('VISUAL_REPLAY');
+                      setSelectedMonth('SEPTEMBER');
+                      setSelectedTradeId('bt-sep-01-2025');
+                    }}
+                    className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition cursor-pointer"
+                  >
+                    Ka Fiiri Shaxanka Replay-ka ➔
+                  </button>
+                </div>
+              </div>
+
+              {/* Month-By-Month Table (Bil Bil) */}
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-200 text-xs flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                  Xogta Bil-Bil ee $10,000 Prop Firm Challenge (1 Sep 2025 – 1 Feb 2026):
+                </h4>
+                <div className="overflow-x-auto rounded-xl border border-slate-800">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                      <tr>
+                        <th className="p-2.5">Bisha</th>
+                        <th className="p-2.5">Trades</th>
+                        <th className="p-2.5">Wins</th>
+                        <th className="p-2.5">Losses</th>
+                        <th className="p-2.5">Win Rate</th>
+                        <th className="p-2.5">Net R</th>
+                        <th className="p-2.5">Faa'iido ($10k / 1%)</th>
+                        <th className="p-2.5">Balance Dhamaad</th>
+                        <th className="p-2.5">Xogta &amp; Sababta</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 bg-slate-900/60">
+                      {SIX_MONTHS_BACKTEST_SUMMARY.map((m, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/40 transition">
+                          <td className="p-2.5 font-bold text-slate-200">
+                            <div>{m.monthLabelSo}</div>
+                            <span className="text-[10px] text-slate-500 font-normal">{m.period}</span>
+                          </td>
+                          <td className="p-2.5 font-mono text-slate-300">{m.totalTrades}</td>
+                          <td className="p-2.5 font-mono text-emerald-400 font-bold">{m.wins}</td>
+                          <td className="p-2.5 font-mono text-rose-400 font-bold">{m.losses}</td>
+                          <td className="p-2.5 font-mono">
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold">
+                              {m.winRate}%
+                            </span>
+                          </td>
+                          <td className="p-2.5 font-mono font-bold text-amber-400">+{m.netR.toFixed(1)}R</td>
+                          <td className="p-2.5 font-mono font-bold text-emerald-400">
+                            +${m.propFirmGain10k.toLocaleString()}
+                          </td>
+                          <td className="p-2.5 font-mono font-bold text-sky-300">
+                            ${m.endingBalance10k.toLocaleString()}
+                          </td>
+                          <td className="p-2.5 text-slate-400 text-[10px] max-w-xs">
+                            <strong className="text-slate-300 block">{m.bestTradeDate}</strong>
+                            <span>{m.highlightSo}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-slate-950 font-bold border-t border-slate-700 text-slate-200">
+                      <tr>
+                        <td className="p-2.5">WADARTA (Sep - Feb):</td>
+                        <td className="p-2.5 font-mono">28</td>
+                        <td className="p-2.5 font-mono text-emerald-400">20</td>
+                        <td className="p-2.5 font-mono text-rose-400">8</td>
+                        <td className="p-2.5 font-mono text-emerald-400">71.4%</td>
+                        <td className="p-2.5 font-mono text-amber-400">+52.0R</td>
+                        <td className="p-2.5 font-mono text-emerald-400">+$5,200</td>
+                        <td className="p-2.5 font-mono text-sky-400 font-bold">$15,200</td>
+                        <td className="p-2.5 text-amber-300 text-[10px] font-sans">
+                          Max Drawdown: 2.0% • 1% ($100) per trade
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* Rules & Prop Firm Advice */}
+              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <h5 className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-amber-400" />
+                  Xeerarka Dahabiga ah ee Model#1 Backtesting-ka:
+                </h5>
+                <ul className="list-disc pl-4 space-y-1 text-slate-400 text-[11px]">
+                  <li><strong>Dhowrista Halista (Risk 1%):</strong> Weligaa ha galin wax ka badan 1% halis ah. Xataa haddii 2 trade oo xiriir ah kugu dhacaan (-2R), waxaad ku baastay heerka ugu sarreeya ee Prop Firm.</li>
+                  <li><strong>Target Fixed 3R:</strong> Ha ku degdegin 1R ama 1.5R. Dhammaan 20-ka guulood waxay bixiyeen 3R buuxda.</li>
+                  <li><strong>Xeerka Fasaxyada:</strong> Bisha Diseembar laga bilaabo 18-ka wax trade ah lama qaadan (Low volume &amp; high spreads).</li>
+                </ul>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">
+                Model#1 Backtesting Database • Verified with ICT Framework
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowSixMonthReport(false)}
+                className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition cursor-pointer"
+              >
+                Fahmay, Xir
+              </button>
+            </div>
           </div>
         </div>
       )}
