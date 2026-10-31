@@ -13,6 +13,9 @@ import { RiskCalculator } from './components/RiskCalculator';
 import { KnowledgeBase } from './components/KnowledgeBase';
 import { AIChatTab } from './components/AIChatTab';
 import { ChartReplayBacktester } from './components/ChartReplayBacktester';
+import { ForwardTestingTab } from './components/ForwardTestingTab';
+import { DailyMarketRecap } from './components/DailyMarketRecap';
+import { TradingViewMobileChart } from './components/TradingViewMobileChart';
 import { INITIAL_LOGS } from './constants/model1Data';
 import { TradeLogEntry } from './types';
 import { useMarketConditions } from './hooks/useMarketConditions';
@@ -28,11 +31,24 @@ import {
   BellRing,
   Scissors,
   X,
+  Camera,
+  CalendarDays,
 } from 'lucide-react';
 
-type TabType = 'SCANNER' | 'REPLAY' | 'CHART' | 'VIDEO' | 'LOG' | 'CALC' | 'KNOWLEDGE' | 'CHAT';
+type TabType = 'SCANNER' | 'DAILY_RECAP' | 'FORWARD' | 'REPLAY' | 'CHART' | 'VIDEO' | 'LOG' | 'CALC' | 'KNOWLEDGE' | 'CHAT';
 
 export default function App() {
+  const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const chartOnlyTradeId = queryParams?.get('chartOnly');
+
+  if (chartOnlyTradeId) {
+    return (
+      <div className="min-h-screen bg-[#090b10] flex items-center justify-center p-2" id="standalone-chart-container">
+        <TradingViewMobileChart initialTradeId={chartOnlyTradeId} isStandalone={true} />
+      </div>
+    );
+  }
+
   const [activeTab, setActiveTab] = useState<TabType>('SCANNER');
   const {
     marketState,
@@ -113,6 +129,32 @@ export default function App() {
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             </div>
             <span>Live Scanner &amp; Bias</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('DAILY_RECAP')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0 ${
+              activeTab === 'DAILY_RECAP'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4 text-amber-400" />
+            <span>Daily Market Recap</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('FORWARD')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0 ${
+              activeTab === 'FORWARD'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
+          >
+            <Camera className="w-4 h-4 text-sky-400" />
+            <span>Forward Testing (Win Rate)</span>
           </button>
 
           <button
@@ -261,6 +303,21 @@ export default function App() {
               onDismissAlert={dismissAlert}
               onSendToReview={handleSendToReview}
               onSendToLog={handleSendToLog}
+              onNavigateToRecap={() => setActiveTab('DAILY_RECAP')}
+            />
+          )}
+          {activeTab === 'DAILY_RECAP' && (
+            <DailyMarketRecap
+              onNavigateToForward={(tradeId) => {
+                setActiveTab('FORWARD');
+              }}
+              onNavigateToScanner={() => setActiveTab('SCANNER')}
+            />
+          )}
+          {activeTab === 'FORWARD' && (
+            <ForwardTestingTab
+              liveMarketState={marketState}
+              onSendToJournal={handleSendToLog}
             />
           )}
           {activeTab === 'REPLAY' && <ChartReplayBacktester onSendToLog={handleSendToLog} />}

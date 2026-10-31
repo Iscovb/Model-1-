@@ -27,6 +27,34 @@ export interface TradeLogEntry {
   createdAt: number;
 }
 
+export interface ForwardTestTrade {
+  id: string;
+  title: string;
+  date: string;
+  session: string;
+  entryTimeNY: string;
+  exitTimeNY?: string;
+  side: 'BUY' | 'SELL';
+  entryPrice: number;
+  slPrice: number;
+  tpPrice: number;
+  slDistance: number;
+  rMultiple: number;
+  status: 'OPEN' | 'WIN' | 'LOSS' | 'MISSED';
+  pips: number;
+  confidenceScore: number;
+  passedRules: string[];
+  smtPair: 'Silver' | 'XAUEUR' | 'XAUGBP';
+  keyLevel: string;
+  tsSweepPrice: number;
+  entrySnapshotUrl?: string;
+  exitSnapshotUrl?: string;
+  notes: string;
+  accountRiskPct: number;
+  createdAt: number;
+  updatedAt?: number;
+}
+
 export interface UnknownItem {
   id: string;
   topic: string;
@@ -88,4 +116,61 @@ export interface LiveScannerState {
     warnings: string[];
   };
   biasUpdateSummary: string;
+}
+
+export interface SessionBreakdown {
+  sessionName: string;
+  timeWindowNY: string;
+  high: number;
+  low: number;
+  openPrice: number;
+  closePrice: number;
+  pipsRange: number;
+  purgeEvent: string;
+  liquidityAction: string;
+  smtStatus: string;
+  setupDetected: boolean;
+  setupSummary?: string;
+}
+
+export interface DailyRecapData {
+  id: string;
+  date: string;
+  dayOfWeek: string;
+  dailyBias: 'BEARISH' | 'BULLISH' | 'NEUTRAL';
+  dolNarrative: string;
+  dayOpen: number;
+  dayHigh: number;
+  dayLow: number;
+  currentOrClosePrice: number;
+  pdl: number;
+  pdh: number;
+  asianRange: {
+    high: number;
+    low: number;
+    midpoint: number;
+    pipsWidth: number;
+  };
+  sessions: SessionBreakdown[];
+  ictOpportunity: {
+    found: boolean;
+    tradeId?: string;
+    direction: 'BUY' | 'SELL' | 'NO_TRADE';
+    confidenceScore: number;
+    primePurgeHour: string;
+    triggerTimeNY?: string;
+    entryLine?: number;
+    stopLoss?: number;
+    targetTp?: number;
+    rMultiple?: number;
+    status: 'WIN' | 'LOSS' | 'NO_SETUP' | 'MISSED';
+    summarySomali: string;
+    checklistPassedCount: number;
+    checklistPassedList: string[];
+    checklistFailedList: string[];
+    reasoningWhyNoSetupOrWin: string;
+  };
+  aiGeneratedSummary: string;
+  keyLessonSomali: string;
+  snapshotUrl?: string;
 }

@@ -3,11 +3,22 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = 3000;
+
+const portArgIndex = process.argv.indexOf('--port');
+const cliPort = portArgIndex !== -1 ? parseInt(process.argv[portArgIndex + 1], 10) : undefined;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : (cliPort || 3000);
+
+const hostArgIndex = process.argv.indexOf('--host');
+const cliHost = hostArgIndex !== -1 ? process.argv[hostArgIndex + 1] : undefined;
+const HOST = process.env.HOST || cliHost || '0.0.0.0';
 
 app.use(express.json({ limit: '25mb' }));
 
@@ -282,8 +293,77 @@ FADLAN SAMEE:
   }
 });
 
+// Daily Market Recap AI Generator endpoint
+app.post('/api/daily-recap', async (req, res) => {
+  try {
+    const { recapData } = req.body;
+    if (!recapData) {
+      return res.status(400).json({ error: 'Xogta maalinta lama helin.' });
+    }
+
+    const prompt = `
+HABKA DAILY MARKET RECAP (XAUUSD ICT MODEL#1):
+Falanqee xogta maalinta:
+Taariikhda: ${recapData.date} (${recapData.dayOfWeek})
+Daily Bias: ${recapData.dailyBias}
+Asian Range: $${recapData.asianRange?.low} - $${recapData.asianRange?.high} (Width: ${recapData.asianRange?.pipsWidth} pips)
+Day High/Low: $${recapData.dayHigh} / $${recapData.dayLow}
+Fursadda Model#1: ${recapData.ictOpportunity?.status} (Score: ${recapData.ictOpportunity?.checklistPassedCount}/11)
+Sababta: ${recapData.ictOpportunity?.reasoningWhyNoSetupOrWin}
+
+FADLAN BIXI QORAAL STRUCTURED AH OO AF-SOOMAALI AH:
+1. Sida maalintu ku bilaabatay Asian Session (Range & Accumulation - Candle 1 CRT).
+2. Dhaqanka London Session (Ma dhacay Judas swing ama sweep?).
+3. Xaaladda NY Prime Session (08:00 - 10:00 AM NY): Ma jirtay fursad Model#1 ah? Haddii ay jirtay sharax SMT, Entry #1 Line, iyo 3R TP. Haddii aysan jirin, sharax sababta anshaxa leh ee suuqa looga fogaaday (Capital preservation).
+4. Gabagabada & Casharka ganacsadaha.
+`;
+
+    const callPromise = ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: MODEL1_SYSTEM_INSTRUCTION,
+      },
+    });
+
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    const result: any = await Promise.race([callPromise, timeoutPromise]);
+
+    if (result && result.text) {
+      return res.json({ summary: result.text });
+    }
+
+    res.json({ summary: recapData.aiGeneratedSummary });
+  } catch (err: any) {
+    console.warn('Daily recap AI fallback:', err.message);
+    res.json({ summary: req.body?.recapData?.aiGeneratedSummary || 'Falanqeynta maalinta waa la kaydiyay.' });
+  }
+});
+
 function getKnowledgeChatResponse(userMessage: string): string {
   const msg = userMessage.toLowerCase();
+
+  if (msg.includes('crt') || msg.includes('candle range') || msg.includes('romeo')) {
+    return `**Fahanka CRT (Candle Range Theory - Romeotpt) & Sida uu ugu xiran yahay Model#1:**
+
+CRT (Candle Range Theory) oo uu sharraxay **Romeotpt** ("What is CRT? Why do all other trading strategies suck?") waa asalka farsamada shaxanka ee Model#1.
+
+1. **Falsafada CRT & Retail Traps:**
+   - Shumac kasta (Daily, 4H, 1H) waa **Dealing Range** madaxbanaan oo u dhexeeya High (Buyside Liquidity) iyo Low (Sellside Liquidity), 50% waa Equilibrium.
+   - Retail strategies way dumaan sababtoo ah waxay ku xiran yihiin indicators daahay iyo support/resistance toos ah. Suuqa algorithm-ka hay'adaha maaliyadda (IPDA) wuxuu kaliya raadiyaa **LIQUIDITY**.
+
+2. **Habka 3-da Shumac (Power of Three / AMD):**
+   - **Candle 1 (Accumulation / Base Range):** Wuxuu dejiyaa xuduudaha sare iyo hoose (High & Low).
+   - **Candle 2 (Manipulation / Turtle Soup):** Wuxuu xaaqaa High ama Low ee Candle 1, isagoo ku dabaya retail breakout traders, laakiin **DIB AYUU UGU XIRMAA RANGE-KA GUDIHIISA**.
+   - **Candle 3 (Distribution / Expansion):** Wuxuu si xawli ah (displacement) ugu dhaqaaqaa xadka ka soo horjeeda ee Candle 1 (Target 3R).
+
+3. **Isku Xirka Model#1 (TET Mentorship 2026):**
+   - **Candle 1** = 4H ama 1H Key Level (OB/FVG) & Dealing Range.
+   - **Candle 2 Sweep** = Waxay dhacdaa inta lagu jiro **Purge Hours** (08:00–10:00 AM NY, 02:00–03:00 AM NY).
+   - **SMT & PSP** = Waxay ka marag kacayaan Candle 2 (Silver ama XAUEUR oo diida sweep-ka).
+   - **5m Entry #1 Line** = Xariiqda dhamaadka 5m OB oo ah Limit Order.
+   - **Candle 3** = Target 3.0R Take Profit oo u wajahan dhinaca ka soo horjeeda range-ka.`;
+  }
 
   if (msg.includes('smt') || msg.includes('lammaane') || msg.includes('pair')) {
     return `**Lammaanaha SMT-da u saxda ah Dahabka (XAUUSD):**
@@ -406,20 +486,30 @@ async function startServer() {
 
   if (isDev) {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: process.env.DISABLE_HMR === 'true' ? false : undefined,
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    const distPath = path.resolve(__dirname, 'dist');
+    app.use(express.static(distPath));
     app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.resolve(distPath, 'index.html'));
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Model#1 Gold Study Agent running on port ${PORT}`);
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`Model#1 Gold Study Agent running at http://${HOST}:${PORT}`);
+  });
+
+  server.on('error', (err: any) => {
+    console.error(`Dev server error on ${HOST}:${PORT}:`, err);
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+});

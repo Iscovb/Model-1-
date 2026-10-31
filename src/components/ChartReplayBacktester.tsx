@@ -23,14 +23,16 @@ import {
   Zap,
   Info,
 } from 'lucide-react';
+import { TradingViewMobileChart } from './TradingViewMobileChart';
 
 interface Props {
   onSendToLog: (entry: Partial<TradeLogEntry>) => void;
 }
 
 export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
-  const [selectedMonth, setSelectedMonth] = useState<'ALL' | 'MAY' | 'JUNE' | 'JULY'>('ALL');
-  const [selectedTradeId, setSelectedTradeId] = useState<string>('bt-may-06');
+  const [selectedMonth, setSelectedMonth] = useState<'ALL' | 'MAY' | 'JUNE' | 'JULY' | 'OCTOBER'>('ALL');
+  const [selectedTradeId, setSelectedTradeId] = useState<string>('bt-oct-28');
+  const [showTvModal, setShowTvModal] = useState<boolean>(false);
   const [currentBarIndex, setCurrentBarIndex] = useState<number>(2); // Start at purge/cut bar
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeedMs, setPlaybackSpeedMs] = useState<number>(1200);
@@ -224,22 +226,33 @@ export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
             </div>
           </div>
 
-          {/* Month Selector Buttons */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-            {(['ALL', 'MAY', 'JUNE', 'JULY'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setSelectedMonth(m)}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition ${
-                  selectedMonth === m
-                    ? 'bg-amber-500 text-slate-950 shadow'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {m === 'ALL' ? 'May – July (9)' : `${m}`}
-              </button>
-            ))}
+          {/* Month Selector & TradingView Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowTvModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold transition shadow-sm"
+              title="Fur muuqaalka rasmiga ah ee TradingView mobile-ka"
+            >
+              <span>📱 TradingView Chart</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+              {(['ALL', 'OCTOBER', 'MAY', 'JUNE', 'JULY'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setSelectedMonth(m)}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                    selectedMonth === m
+                      ? 'bg-amber-500 text-slate-950 shadow'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {m === 'ALL' ? 'Dhammaan (10)' : m === 'OCTOBER' ? 'Maanta (Oct)' : `${m}`}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1091,6 +1104,18 @@ export const ChartReplayBacktester: React.FC<Props> = ({ onSendToLog }) => {
           </div>
         </div>
       </div>
+
+      {/* TradingView Mobile Chart Modal */}
+      {showTvModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-md my-auto">
+            <TradingViewMobileChart
+              initialTradeId={activeTrade.id}
+              onClose={() => setShowTvModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

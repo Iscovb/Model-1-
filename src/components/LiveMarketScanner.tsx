@@ -23,7 +23,9 @@ import {
   BellOff,
   Volume2,
   X,
+  BarChart2,
 } from 'lucide-react';
+import { TradingViewMobileChart } from './TradingViewMobileChart';
 
 interface Props {
   scannerState: LiveScannerState;
@@ -41,6 +43,7 @@ interface Props {
   onDismissAlert?: () => void;
   onSendToReview: (scores: Record<string, any>, side: 'BUY' | 'SELL') => void;
   onSendToLog: (entry: Partial<TradeLogEntry>) => void;
+  onNavigateToRecap?: () => void;
 }
 
 export const LiveMarketScanner: React.FC<Props> = ({
@@ -59,7 +62,9 @@ export const LiveMarketScanner: React.FC<Props> = ({
   onDismissAlert,
   onSendToReview,
   onSendToLog,
+  onNavigateToRecap,
 }) => {
+  const [showTvModal, setShowTvModal] = useState<boolean>(false);
   const setup = scannerState.activeSetup;
   const isHighConfidence = setup.confidenceScore >= 9;
   const isDeveloping = setup.confidenceScore < 9;
@@ -280,6 +285,34 @@ export const LiveMarketScanner: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* Daily Market Recap Quick Access Banner */}
+      {onNavigateToRecap && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-slate-900 to-amber-950/30 border border-indigo-500/30 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Daily Market Recap (XAUUSD)</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">Asian → London → NY</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Maanta: Suuqu wuxuu ahaa Chop/Fadhi (No Trade). Falanqeynta Asian Session ilaa NY Session iyo sababaha.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onNavigateToRecap}
+            type="button"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/20 shrink-0"
+          >
+            <span>Fur Daily Recap</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Real-time Bias & Liquidity Engine */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -544,7 +577,16 @@ export const LiveMarketScanner: React.FC<Props> = ({
             Waxaad xogtan si toos ah ugu wareejin kartaa Baaritaanka Shaxanka ama Diiwaanka CSV.
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowTvModal(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-bold transition shadow-sm"
+              title="Fur shaxanka tooska ah ee TradingView mobile-ka"
+            >
+              <BarChart2 className="w-3.5 h-3.5 text-sky-400" />
+              <span>📱 TradingView Chart (Sawirka Shaxanka)</span>
+            </button>
             <button
               type="button"
               onClick={handleExportToReview}
@@ -564,6 +606,18 @@ export const LiveMarketScanner: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* TradingView Mobile Chart Modal */}
+      {showTvModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="relative w-full max-w-md my-auto">
+            <TradingViewMobileChart
+              initialTradeId="bt-oct-28"
+              onClose={() => setShowTvModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

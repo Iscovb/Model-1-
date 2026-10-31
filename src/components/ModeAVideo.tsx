@@ -104,8 +104,34 @@ Shumac kasta oo 1H ah wuxuu ka kooban yahay laba-iyo-toban (12) shumac oo 5m ah.
 - Marka 1H uu diido inuu jabka sii wado oo uu reebto wick (rejection), 5m ayaa bixiya Market Structure Shift iyo Order Block. Halkan ayaad Limit Order ku dhigeysaa Entry #1 Line inta u dhaxaysa 8:15 ilaa 8:45 AM NY!
 [00:17:30] Xeerka 4-aad: Xaddid Timeframes-kaaga (Analysis Paralysis).
 Ha eegin 8 ama 10 timeframe! Nidaamkeena TET Model#1 wuxuu ku dhisan yahay: Daily -> 1H -> 5m.
-Haddii labada sare (Daily iyo 1H) aysan is waafaqsanayn, ma jiro wax trade ah oo la galayo. Fadhiiso oo xakamee nafsaddaada!
-[00:20:50] Gunaanad: Isku xirka timeframes-ku waa furaha runta ah ee kaa dhigaya ganacsade yaqaana meesha uu suuqu ka yimid, halka uu joogo, iyo meesha uu u socdo.`;
+Haddii labada sare (Daily iyo 1H) aysan is waafaqsanayn, ma jiro wax trade ah oo la galayo. Fadhiiso oo xakamee nafsaddaada!`;
+
+const ROMEOTPT_CRT_TRANSCRIPT = `[00:00:10] Romeo (Romeotpt): Welcome to the definitive masterclass on CRT (Candle Range Theory) and why all other trading strategies suck.
+[00:01:15] The Retail Trap: 95% of retail traders lose because they clutter their charts with lagging indicators, trendlines, and support/resistance breakouts. The market does NOT care about retail patterns. The market algorithm (IPDA / Smart Money) hunts only one thing: LIQUIDITY.
+[00:03:00] What is CRT (Candle Range Theory)?
+Every single candlestick on ANY timeframe (Daily, 4H, 1H) represents a distinct, standalone DEALING RANGE defined strictly by its High and its Low.
+- High = Buyside Liquidity (buy stops resting above).
+- Low = Sellside Liquidity (sell stops resting below).
+- 50% Midpoint = Equilibrium.
+[00:05:25] The Binary Reality: Only TWO things happen to a candle range:
+1. True Breakout: Price expands and CLOSES outside the previous candle's high or low.
+2. Turtle Soup (Manipulation / Sweep): Price extends past the previous candle's high or low to raid liquidity, BUT CLOSES BACK INSIDE the range! This is the foundation of institutional reversal setups.
+[00:08:10] The Power of 3 (AMD) within CRT:
+- Candle 1 (Accumulation / Base Range): Sets the boundary high and low.
+- Candle 2 (Manipulation / Turtle Soup): Takes out the high or low of Candle 1, trapping retail breakout traders, and violently closes back inside the range.
+- Candle 3 (Distribution / Expansion): Displaces with high momentum toward the OPPOSITE side of Candle 1's range (Targeting the opposing liquidity pool).
+[00:12:40] Multi-Timeframe Alignment:
+Because price is fractal:
+- Daily CRT is executed on the 1H timeframe.
+- 4H CRT is executed on the 15m–5m timeframe.
+- 1H CRT is executed on the 5m–3m timeframe.
+[00:15:30] Execution Confluence (How CRT connects to Model#1):
+When Candle 2 performs the Turtle Soup sweep during institutional purge hours (e.g. 8-10am NY or 2-3am NY):
+1. Key Level: Confirm the sweep happened at a HTF FVG, OB, or PDH/PDL.
+2. Inter-market SMT Divergence: Silver (XAGUSD) or XAUEUR must refuse to confirm the new extreme.
+3. 5m Execution: Wait for displacement and enter at the END of the 5m Order Block (Entry #1 Line).
+4. Take Profit: Target the opposite end of the CRT range for an asymmetrical 3R return!
+[00:19:40] Why CRT beats everything: It strips away analysis paralysis and answers one mechanical question: Did this candle take out the previous candle's extreme, and did it close back inside? If yes, institutional manipulation is confirmed.`;
 
 export const ModeAVideo: React.FC<Props> = () => {
   const [videoUrl, setVideoUrl] = useState('');
@@ -158,6 +184,11 @@ export const ModeAVideo: React.FC<Props> = () => {
   const handleLoadRecapB = () => {
     setVideoUrl('https://youtu.be/M_s41oD-a08');
     setTranscript(RECAP_B_TRANSCRIPT);
+  };
+
+  const handleLoadRomeotptCrt = () => {
+    setVideoUrl('https://youtu.be/UUq_wKQ61Wo?si=lqZYOSYR4EOE00Nj');
+    setTranscript(ROMEOTPT_CRT_TRANSCRIPT);
   };
 
   const handleAnalyze = async () => {
@@ -216,6 +247,15 @@ export const ModeAVideo: React.FC<Props> = () => {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={handleLoadRomeotptCrt}
+              type="button"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-md shadow-rose-600/20"
+              title="Soo geli: What is CRT? Why do all other trading strategies suck? (Romeotpt)"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              Romeotpt: CRT Model
+            </button>
             <button
               onClick={handleLoadIskuXirkaTimeframe}
               type="button"
